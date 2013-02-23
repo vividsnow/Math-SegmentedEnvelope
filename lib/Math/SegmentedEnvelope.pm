@@ -5,17 +5,25 @@ use Clone 'clone';
 use Carp;
 use List::Util 'sum';
 use constant PI => 4 * atan2(1, 1);
+use Exporter::Easy (OK => ['env']);
+use namespace::autoclean;
 
 has def => ( is => 'ro', default => sub {  # random by default
-    my $size = int(rand(5)+3);
+    my $size = int rand(5) + 3;
+    my $level = shift->border_level;
     [ 
-        [0, map(rand, (0) x $size), 0],
+        [$level->[0], map(rand, (0) x $size), $level->[1]],
         [normalize_sum(map rand() + 0.2, (0) x ($size + 1))],
-        [map 3 * (rand) - 1.5, (0) x ($size + 1)] 
-    ] 
+        [map { (rand(2) + 1) * (int(rand(2))? 1 : -1) } (0) x ($size + 1)] 
+    ];
 });
+has border_level => is => rw => default => sub {   # default border level for start and end
+    [ (rand)x2 ]
+} => coerce => sub {
+     ref($_[0]) eq 'ARRAY' ? $_[0] : [($_[0])x2];
+};
 has is_morph => ( is => 'rw' );
-has morpher => (  is => 'rw', default => sub { sub { sin( $_[0] * PI / 2 ) } } );
+has morpher => (  is => 'rw', default => sub { sub { sin( $_[0] * PI / 2 ) ** 2 } } );
 has is_hold => ( is => 'rw' );
 has is_fold_over => ( is => 'rw' );
 has is_wrap_neg => ( is => 'rw' );
@@ -28,6 +36,8 @@ has _is_neg => ( is => 'rw' );
 has _is_asc => ( is => 'rw' );
 has _past_segment => ( is => 'rw', default => sub { -1 } );
 has _passed_segments_duration => ( is => 'rw', default => sub { 0 } );
+
+sub env { __PACKAGE__->new(@_) }
 
 sub BUILDARGS {
     my ( $class, @args ) = @_;
@@ -228,13 +238,21 @@ sub static { # make immutable evaluator from current params
     }
 }
 
-sub table { # create lookup table of specified size
-    my ($self, $size) = @_;
+sub table { # create lookup table of specified size, loops and range
+    my ($self, $size, $loop, $from, $to) = @_;
     $size ||= 1024;
+    $loop ||= 1;
+    $from ||= 0;
+    $to   ||= $self->duration;
     croak "table size should be >= 1" if $size <= 0;
     my $s = $self->static;
-    my $d = $self->duration;
-    map { $s->($self->duration * $_ / $size) } (0..--$size);
+    my $range = $to - $from;
+    my $lp = $loop / $size;
+    my $p;
+    map { 
+        $p = $_ * $lp;
+        $s->($from + $range * ($p - int $p));
+    } 0..$size-1;
 }
 
 sub normalize_duration {
@@ -249,7 +267,7 @@ sub normalize_sum {
 }
 
 # TODO utility methods
-sub stack {}
+sub stack {} # concat?
 sub blend {}
 sub delay {}
 # TODO some usual envelopes

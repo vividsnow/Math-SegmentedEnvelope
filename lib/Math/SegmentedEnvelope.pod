@@ -47,13 +47,13 @@ This module gives abstraction of segmeneted envelope. You can create, modify and
 
 =head1 METHODS
 
-=over
-
 =head2 new($definiton, %params)
 
 $definition is a 3 element arrayref of arrayrefs - [[@levels], [@durations], [@curves]]
+
 %params can provide additional params such C<is_hold>,C<is_morph>,C<morpher>,C<is_fold_over>,C<is_wrap_neg>
-if nothing specified, than random normalized envelope will be created
+
+if nothing specified, than random normalized envelope will be created, but you can provide C<border_level> param to define levels at begin/end
 
 =head2 at($pos)
 
@@ -73,7 +73,7 @@ get/set flag which turns on value morphing inside segment before applying curvin
 
 =head2 morpher(sub {...})
 
-get/set morpher, default morpher is a C<sub { sin(PI/2*$_[0]) }> which smoothes envelope, morpher recieves value from 0 to 1 and should also has same output range
+get/set morpher, default morpher is a C<sub { sin(PI/2*$_[0]) ** 2 }> which smoothes envelope, morpher recieves value from 0 to 1 and should also has same output range
 
 =head2 is_hold(0|1)
 
@@ -127,6 +127,27 @@ same as durs, but for curves
 
 get/set curvative at position
 
+=head2 border_level([$begin,$end])
+
+should be in range [0,1], can be array ref or single value for equal levels at begin/end of envelope
+
+this will work only when passed to constructor to create random envelope, e.g.
+
+   Math::SegmentedEnvelope->new(border_level => [0.5,0.2])
+
+=head1 FUNCTIONS
+
+=over
+
+=item env(constructor params)
+
+handy function which will construct object from passed params, e.g.
+
+   use Math::SegmentedEnvelope 'env';
+   my @arr = map { env } 0..9; # @arr now contains 10 random envelope objects
+
+alternatively you can use modules such as L<aliased>, L<as>
+
 =back
 
 =head1 EXAMPLES
@@ -175,6 +196,8 @@ get/set curvative at position
 
 =head1 SUPPORT
 
+=over
+
 =item * GitHub
  
 L<http://github.com/vividsnow/Math-SegmentedEnvelope>
@@ -200,7 +223,7 @@ the same terms as the Perl 5 programming language system itself.
  
 =head1 SEE ALSO
  
-L<PDL>, L<OpenGL>, L<SDL>, L<AnyEvent>, L<Math::Fractal::Noisemaker> 
+L<PDL>, L<Math::Fractal::Noisemaker>, L<Math::NumSeq>, L<Math::PlanePath>, L<OpenGL>, L<SDL>, L<AnyEvent>
 
 =head1 TODO
 
